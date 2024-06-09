@@ -57,9 +57,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
             float temperature = getTemperature();
             float humidity = getHumidity();
             ESP_LOGI(TAG, "Temperature: %.1f, Humidity: %.1f", temperature, humidity);
-
             char *json_str = convert_model_sensor_to_json(temperature, humidity);
-            ESP_LOGI(TAG,"%s",json_str);
+            //ESP_LOGI(TAG,"%s",json_str);
             if (json_str != NULL) {
                 msg_id = esp_mqtt_client_publish(client, "/sensor/data", json_str, 0, 0, 0);
                 ESP_LOGI(TAG, "sent publish successful, msg_id=%d", msg_id);
@@ -75,9 +74,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         if (getState() == 1 || getState() == 0) {
             ESP_LOGI(TAG, "=== SIGNAL LED ===");
             int signal_led = getState();
-           // ESP_LOGI(TAG, "Status: %d", signal_led);
-            char *json_StateLed = convert_model_signaldiv_to_json(signal_led);
-            ESP_LOGI(TAG, "%s", json_StateLed);
+            char *json_StateLed = convert_model_signalLight_to_json(signal_led);
+            //ESP_LOGI(TAG, "%s", json_StateLed);
         if (json_StateLed != NULL) {
             msg_id = esp_mqtt_client_publish(client, "device01/light/light01/state", json_StateLed, 0, 0, 0);
             ESP_LOGI(TAG, "Sent publish successful, msg_id=%d", msg_id);
@@ -90,9 +88,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         if (getStateSer() == 1 || getStateSer() == 0) {
            ESP_LOGI(TAG, "=== SIGNAL Servo ===");
            int signal_servo = getStateSer();
-           //ESP_LOGI(TAG, "Status: %d", signal_servo);
-           char *json_StateServo = convert_model_signaldiv_to_json(signal_servo);
-           ESP_LOGI(TAG, "%s", json_StateServo);
+           char *json_StateServo = convert_model_signalDoor_to_json(signal_servo);
+           //ESP_LOGI(TAG, "%s", json_StateServo);
         if (json_StateServo != NULL) {
             msg_id = esp_mqtt_client_publish(client, "device01/door/door01/state", json_StateServo, 0, 0, 0);
             ESP_LOGI(TAG, "Sent publish successful, msg_id=%d", msg_id);
@@ -105,9 +102,8 @@ static void mqtt_event_handler(void *handler_args, esp_event_base_t base, int32_
         if (getStateFan() == 0 || getStateFan() == 1 || getStateFan() == 2 || getStateFan() == 3) {
            ESP_LOGI(TAG, "=== SIGNAL Fan ===");
            int signal_fan = getStateFan();
-           //ESP_LOGI(TAG, "Status: %d", signal_fan);
            char *json_StateFan = convert_model_signalFan_to_json(signal_fan);
-           ESP_LOGI(TAG, "%s", json_StateFan);
+           //ESP_LOGI(TAG, "%s", json_StateFan);
         if (json_StateFan != NULL) {
             msg_id = esp_mqtt_client_publish(client, "device01/fan/fan01/state", json_StateFan, 0, 0, 0);
             ESP_LOGI(TAG, "Sent publish successful, msg_id=%d", msg_id);
@@ -179,8 +175,8 @@ char *convert_model_sensor_to_json(float temperature, float humidity){
     return json_str;
 }
 
-//LED signal convert:
-char *convert_model_signaldiv_to_json(int signal){
+// 
+char *convert_model_signalLight_to_json(int signal){
     // create a new cJSON object
     cJSON *json = cJSON_CreateObject();
     if (json == NULL)
@@ -192,8 +188,47 @@ char *convert_model_signaldiv_to_json(int signal){
     char state_str[10];
     if(signal == 1) snprintf(state_str, sizeof(state_str), "ON");
     else snprintf(state_str, sizeof(state_str), "OFF");
+    cJSON *door01 = cJSON_CreateObject();
+    if (door01 == NULL) {
+        printf("Error: Failed to create cJSON door01 object");
+        cJSON_Delete(json);
+        return NULL;
+    }
 
-    cJSON_AddStringToObject(json, "state", state_str);
+    cJSON_AddStringToObject(door01, "name", "Đèn");
+    cJSON_AddStringToObject(door01, "state", state_str);
+    cJSON_AddItemToObject(json, "light01", door01);
+    // convert the cJSON object to a JSON string
+    char *json_state = cJSON_PrintUnformatted(json);
+    // free the JSON object (not the string)
+    cJSON_Delete(json);
+
+    return json_state;
+}
+
+//Door signal convert:
+char *convert_model_signalDoor_to_json(int signal){
+    // create a new cJSON object
+    cJSON *json = cJSON_CreateObject();
+    if (json == NULL)
+    {
+        printf("Error: Failed to create cJSON object");
+        return NULL;
+    }
+    // modify the JSON data
+    char state_str[10];
+    if(signal == 1) snprintf(state_str, sizeof(state_str), "ON");
+    else snprintf(state_str, sizeof(state_str), "OFF");
+    cJSON *door01 = cJSON_CreateObject();
+    if (door01 == NULL) {
+        printf("Error: Failed to create cJSON door01 object");
+        cJSON_Delete(json);
+        return NULL;
+    }
+
+    cJSON_AddStringToObject(door01, "name", "Cửa");
+    cJSON_AddStringToObject(door01, "state", state_str);
+    cJSON_AddItemToObject(json, "door01", door01);
     // convert the cJSON object to a JSON string
     char *json_state = cJSON_PrintUnformatted(json);
     // free the JSON object (not the string)
@@ -224,8 +259,16 @@ char *convert_model_signalFan_to_json(int signal){
     } else {
         return -1;
     }
+    cJSON *fan01 = cJSON_CreateObject();
+    if (fan01 == NULL) {
+        printf("Error: Failed to create cJSON fan01 object");
+        cJSON_Delete(json);
+        return NULL;
+    }
 
-    cJSON_AddStringToObject(json, "state", state_str1);
+    cJSON_AddStringToObject(fan01, "name", "Quạt");
+    cJSON_AddStringToObject(fan01, "state", state_str1);
+    cJSON_AddItemToObject(json, "fan01", fan01);
     // convert the cJSON object to a JSON string
     char *json_state = cJSON_PrintUnformatted(json);
     // free the JSON object (not the string)

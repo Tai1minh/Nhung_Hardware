@@ -38,7 +38,8 @@ void mqtt_data_pt_set_callback(mqtt_data_callback_t mqtt_func_ptr);
 
 //convert
 char *convert_model_sensor_to_json(float temperature, float humidity);
-char *convert_model_signaldiv_to_json(int signal);
+char *convert_model_signalDoor_to_json(int signal);
+char *convert_model_signalLight_to_json(int signal);
 char *convert_model_signalFan_to_json(int signal);
 
 void mqtt_app_start(void);
